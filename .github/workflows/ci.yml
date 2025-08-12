@@ -22,6 +22,9 @@ jobs:
       - name: Tidy modules
         run: go mod tidy
 
+      - name: Install mockery
+        run: go install github.com/vektra/mockery/v2@latest
+
       - name: Generate code (if you use go:generate for mocks, etc.)
         run: go generate ./...
 

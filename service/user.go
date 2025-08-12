@@ -7,6 +7,7 @@ import (
 	"golang-crud-ddd/domain"
 	"golang-crud-ddd/helper"
 	"golang-crud-ddd/repository"
+	"log"
 	"time"
 )
 
@@ -17,7 +18,8 @@ type UserService interface {
 	ChangePassword(in *apprequest.ChangePasswordRequest) error
 	RefreshTokenss(oldRefreshTokens string) (*appresponse.AuthenticateUserResponse, error)
 	Logout(RefreshTokens string) error
-	GetUserByID(id int) (*domain.User, error)
+	GetUserByID(id int) (*appresponse.UserResponse, error)
+	UpdateUserByID(id int, user *apprequest.UpsertUserPersonalDetailRequest) (*appresponse.UserResponse, error)
 }
 
 // userService
@@ -34,20 +36,32 @@ func NewUserService(repo repository.IUserRepository, RefreshTokensRepo repositor
 }
 
 // GetUserByID ...
-func (u *userService) GetUserByID(id int) (*domain.User, error) {
+func (u *userService) GetUserByID(id int) (*appresponse.UserResponse, error) {
 	user, err := u.repo.GetUserByID(id)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &appresponse.UserResponse{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		Phone:     user.Phone,
+		Role:      user.Role,
+		Avatar:    user.Avatar,
+		IsActive:  user.IsActive,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
 }
 
 // CreateUser ...
 func (u *userService) CreateUser(user *apprequest.UserRequest) (*appresponse.AuthenticateUserResponse, error) {
+	const funcName = "service.CreateUser"
 	in := userApprequestToDomain(*user)
 
 	id, err := u.repo.CreateUser(in)
 	if err != nil {
+		log.Printf("%s: failed to create user: %v", funcName, err)
 		return nil, err
 	}
 
@@ -84,6 +98,7 @@ func userApprequestToDomain(user apprequest.UserRequest) *domain.User {
 		Name:     user.Name,
 		Password: user.Password,
 		Email:    user.Email,
+		Role:     user.Role, // Assuming Role is part of UserRequest
 	}
 }
 
@@ -207,4 +222,40 @@ func (u *userService) Logout(RefreshTokens string) error {
 	}
 	// Revoke the token
 	return u.RefreshTokensRepo.RevokeRefreshTokens(RefreshTokens)
+}
+
+// UpdateUserByID updates user details
+func (u *userService) UpdateUserByID(id int, user *apprequest.UpsertUserPersonalDetailRequest) (*appresponse.UserResponse, error) {
+	// Fetch existing user
+	existingUser, err := u.repo.GetUserByID(id)
+	if err != nil {
+		return nil, err
+	}
+	// Update fields
+	if user.Phone != "" {
+		existingUser.Phone = user.Phone
+	}
+	if user.Role != "" {
+		existingUser.Role = user.Role
+	}
+	if user.Avatar != "" {
+		existingUser.Avatar = user.Avatar
+	}
+	// Save updated user
+	if err := u.repo.UpdateUserByID(id, existingUser); err != nil {
+		return nil, err
+	}
+	// Convert to response format
+	response := &appresponse.UserResponse{
+		ID:        existingUser.ID,
+		Name:      existingUser.Name,
+		Email:     existingUser.Email,
+		Phone:     existingUser.Phone,
+		Role:      existingUser.Role,
+		Avatar:    existingUser.Avatar,
+		IsActive:  existingUser.IsActive,
+		CreatedAt: existingUser.CreatedAt,
+		UpdatedAt: existingUser.UpdatedAt,
+	}
+	return response, nil
 }

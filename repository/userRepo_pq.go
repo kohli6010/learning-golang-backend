@@ -28,8 +28,13 @@ func (repo *UserRepo) GetUserByID(id int) (*domain.User, error) {
 		ID:        user.ID,
 		Name:      user.Name,
 		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		Role:      user.Role,
+		Phone:     user.Phone,
+		Avatar:    user.Avatar,
+		IsActive:  user.IsActive,
+		Password:  user.Password, // Ensure password is handled securely
+		CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -44,8 +49,8 @@ func (repo *UserRepo) GetUserByEmail(email string) (*domain.User, error) {
 		Name:      user.Name,
 		Email:     user.Email,
 		Password:  user.Password,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}, nil
 }
 
@@ -55,6 +60,7 @@ func (repo *UserRepo) CreateUser(user *domain.User) (int64, error) {
 		Name:     user.Name,
 		Password: user.Password,
 		Email:    user.Email,
+		Role:     user.Role,
 	}
 	id, err := models.CreateUser(modelUser, repo.o)
 	if err != nil {
@@ -65,11 +71,29 @@ func (repo *UserRepo) CreateUser(user *domain.User) (int64, error) {
 
 // UpdateUserByID updates a user by ID
 func (repo *UserRepo) UpdateUserByID(id int, user *domain.User) error {
-	modelUser := &models.Users{
-		ID:       id,
-		Name:     user.Name,
-		Password: user.Password,
-		Email:    user.Email,
+	modelUser := &models.Users{}
+	if user.Name != "" {
+		modelUser.Name = user.Name
+	}
+	if user.Email != "" {
+		modelUser.Email = user.Email
+	}
+	if user.Phone != "" {
+		modelUser.Phone = user.Phone
+	}
+	if user.Role != "" {
+		modelUser.Role = user.Role
+	}
+	if user.Avatar != "" {
+		modelUser.Avatar = user.Avatar
+	}
+	if user.IsActive {
+		modelUser.IsActive = user.IsActive
+	}
+	modelUser.Password = user.Password // Assuming password is already encrypted
+	modelUser.IsActive = true          // Default to true if not specified
+	if user.IsActive == false {
+		modelUser.IsActive = user.IsActive
 	}
 	err := models.UpdateUserByID(id, modelUser, repo.o)
 	if err != nil {

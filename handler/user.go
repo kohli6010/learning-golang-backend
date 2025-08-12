@@ -200,3 +200,31 @@ func CreateEndpointForLogout(svc service.UserService) http.HandlerFunc {
     }
 }
 
+// CreateEndpointForUpdateUserByID ...
+func CreateEndpointForUpdateUserByID(svc service.UserService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Logic to handle updating user by ID
+		userID, ok := middleware.GetUserIDFromContext(r.Context())
+		if !ok {
+			http.Error(w, "Request Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var updateRequest apprequest.UpsertUserPersonalDetailRequest
+		err := json.NewDecoder(r.Body).Decode(&updateRequest)
+		if err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		response, err := svc.UpdateUserByID(userID, &updateRequest)
+		if err != nil {
+			http.Error(w, "Failed to update user", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}
+}
+

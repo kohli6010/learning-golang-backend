@@ -1,106 +1,93 @@
 package models
 
 import (
+	"time"
+
 	"github.com/beego/beego/v2/client/orm"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// User ...
 type Users struct {
-	ID        int    `orm:"column(id);auto"`
-	Name      string `orm:"column(name);"`
-	Password  string `orm:"column(password);"`
-	Email     string `orm:"column(email);"`
-	CreatedAt string `orm:"column(created_at);"`
-	UpdatedAt string `orm:"column(updated_at);"`
+	ID        int       `orm:"column(id);auto"`
+	Name      string    `orm:"column(name);size(100)"`
+	Email     string    `orm:"column(email);size(150);unique"` // unique index
+	Phone     string    `orm:"column(phone);size(20);null"`    // add unique if required: ;unique
+	Password  string    `orm:"column(password);"`
+	Role      string    `orm:"column(role);size(20)"` // rider|driver|admin (enforce in app or via CHECK in SQL)
+	Avatar    string    `orm:"column(avatar);size(255);null"`
+	IsActive  bool      `orm:"column(is_active);default(true)"`
+	CreatedAt time.Time `orm:"column(created_at);auto_now_add;type(datetime)"` // set once
+	UpdatedAt time.Time `orm:"column(updated_at);auto_now;type(datetime)"`     // set on every save
 }
+
+func (u *Users) TableName() string { return "users" }
 
 func init() {
 	orm.RegisterModel(new(Users))
 }
 
-// GetUserByID ... retrieves a user by ID
+// Queries
 func GetUserByID(id int, o orm.Ormer) (*Users, error) {
-	var user Users
-	err := o.QueryTable(new(Users)).Filter("id", id).One(&user)
-	if err != nil {
+	var u Users
+	if err := o.QueryTable(new(Users)).Filter("id", id).One(&u); err != nil {
 		return nil, err
 	}
-	return &user, nil
+	return &u, nil
 }
 
-// GetUserByEmail ...
 func GetUserByEmail(email string, o orm.Ormer) (*Users, error) {
-	var user Users
-	err := o.QueryTable(new(Users)).Filter("email", email).One(&user)
-	if err != nil {
+	var u Users
+	if err := o.QueryTable(new(Users)).Filter("email", email).One(&u); err != nil {
 		return nil, err
 	}
-	return &user, nil
+	return &u, nil
 }
 
-// CreateUser ... creates a new user
-func CreateUser(user *Users, o orm.Ormer) (int64, error) {
-	// Insert the user into the database
-	if user.Password != "" {
-		encryptedPassword, err := encrpytPassword(user.Password)
+// Create
+func CreateUser(u *Users, o orm.Ormer) (int64, error) {
+	if u.Password != "" {
+		enc, err := encryptPassword(u.Password)
 		if err != nil {
 			return 0, err
 		}
-		user.Password = encryptedPassword
+		u.Password = enc
 	}
-
-	id, err := o.Insert(user)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	return o.Insert(u)
 }
 
-// UpdateUserByID ... updates a user by ID
-func UpdateUserByID(id int, user *Users, o orm.Ormer) error {
-	// Update the user in the database
-	user.ID = id
-	_, err := o.Update(user)
-	if err != nil {
-		return err
-	}
-	return nil
+// Update: pass explicit fields to avoid overwriting unintended columns
+func UpdateUserByID(id int, u *Users, o orm.Ormer, fields ...string) error {
+	u.ID = id
+	_, err := o.Update(u, fields...)
+	return err
 }
 
-// DeleteUserByID ... deletes a user by ID
+// Delete
 func DeleteUserByID(id int, o orm.Ormer) error {
-	// Delete the user from the database
 	_, err := o.Delete(&Users{ID: id})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-// encrpytPassword ...
-func encrpytPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// Password helpers
+func encryptPassword(password string) (string, error) {
+	b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
-	return string(hash), nil
+	return string(b), nil
 }
 
-// ChangePassword ...
+func CheckPassword(hash string, plain string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(plain)) == nil
+}
+
+// Change password updates UpdatedAt automatically due to auto_now
 func ChangePassword(id int, newPassword string, o orm.Ormer) error {
-	// Encrypt the new password
-	encryptedPassword, err := encrpytPassword(newPassword)
+	enc, err := encryptPassword(newPassword)
 	if err != nil {
 		return err
 	}
-
-	// Update the user's password in the database
-	user := &Users{ID: id, Password: encryptedPassword}
-	_, err = o.Update(user, "Password")
-	if err != nil {
-		return err
-	}
-
-	return nil
+	u := &Users{ID: id, Password: enc}
+	_, err = o.Update(u, "Password") // UpdatedAt auto_now will refresh on save
+	return err
 }

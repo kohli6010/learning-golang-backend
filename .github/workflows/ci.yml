@@ -20,6 +20,11 @@ jobs:
         with:
           go-version: stable
 
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59.1  # pin for stability
+
       - name: Show Make version
         run: make --version
 

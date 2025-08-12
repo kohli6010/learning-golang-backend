@@ -1,0 +1,44 @@
+# Binaries and build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/build/
+/dist/
+
+# Dependency directories
+vendor/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment/config files
+.env
+.env.*
+env.yml
+
+# Logs
+*.log
+
+# Redis dump files
+dump.rdb
+appendonly.aof
+
+# Beego ORM auto-generated files
+database.db
+
+# Coverage files
+coverage.out
+
+# Go module cache (not usually in project, but just in

@@ -92,9 +92,7 @@ func (repo *UserRepo) UpdateUserByID(id int, user *domain.User) error {
 	}
 	modelUser.Password = user.Password // Assuming password is already encrypted
 	modelUser.IsActive = true          // Default to true if not specified
-	if user.IsActive == false {
-		modelUser.IsActive = user.IsActive
-	}
+	
 	err := models.UpdateUserByID(id, modelUser, repo.o)
 	if err != nil {
 		return err

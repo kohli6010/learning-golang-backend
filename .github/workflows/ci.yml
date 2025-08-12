@@ -10,7 +10,6 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,8 +19,16 @@ jobs:
         with:
           go-version: stable
 
-      - name: Show Make version
-        run: make --version
+      - name: Tidy modules
+        run: go mod tidy
+
+      - name: Generate code (if you use go:generate for mocks, etc.)
+        run: go generate ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.1
 
       - name: Test
         run: make test

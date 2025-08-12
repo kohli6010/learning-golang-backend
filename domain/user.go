@@ -6,6 +6,10 @@ type User struct {
 	Name      string
 	Password  string
 	Email     string
+	Phone     string
+	Role      string
+	Avatar    string
+	IsActive  bool
 	CreatedAt string
 	UpdatedAt string
 }

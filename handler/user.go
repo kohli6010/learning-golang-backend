@@ -29,7 +29,11 @@ func CreateEndpointForGetUserByID(svc service.UserService) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(user)
+		err = json.NewEncoder(w).Encode(user)
+		if err != nil {			
+			http.Error(w, "Failed to encode user response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -54,7 +58,11 @@ func CreateEndpointForCreateUser(svc service.UserService) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		err = json.NewEncoder(w).Encode(resp)
+		if err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -77,7 +85,11 @@ func CreateEndpointForAuthenticateUser(svc service.UserService) http.HandlerFunc
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -105,7 +117,11 @@ func CreateEndpointForChangePassword(svc service.UserService) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Password changed successfully"))
+		_, err = w.Write([]byte("Password changed successfully"))
+		if err != nil {
+			http.Error(w, "Failed to write response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -127,7 +143,11 @@ func CreateEndpointForRefreshTokenss(svc service.UserService) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -198,5 +218,37 @@ func CreateEndpointForLogout(svc service.UserService) http.HandlerFunc {
         w.Header().Set("Content-Type", "application/json")
         _ = json.NewEncoder(w).Encode(map[string]string{"message": "Logged out successfully"})
     }
+}
+
+// CreateEndpointForUpdateUserByID ...
+func CreateEndpointForUpdateUserByID(svc service.UserService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Logic to handle updating user by ID
+		userID, ok := middleware.GetUserIDFromContext(r.Context())
+		if !ok {
+			http.Error(w, "Request Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var updateRequest apprequest.UpsertUserPersonalDetailRequest
+		err := json.NewDecoder(r.Body).Decode(&updateRequest)
+		if err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		response, err := svc.UpdateUserByID(userID, &updateRequest)
+		if err != nil {
+			http.Error(w, "Failed to update user", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
+	}
 }
 

@@ -34,6 +34,8 @@ func SetupRoutes() {
 	router.Handle("/api/v1/users/refresh-tokens", middleware.AuthMiddleware(handler.CreateEndpointForRefreshTokenss(userService))).Methods("POST")
 	// Example route for user logout
 	router.Handle("/api/v1/users/logout", middleware.AuthMiddleware(handler.CreateEndpointForLogout(userService))).Methods("POST")
+	// Example route for updating user by ID
+	router.Handle("/api/v1/users", middleware.AuthMiddleware(handler.CreateEndpointForUpdateUserByID(userService))).Methods("PUT")
 
 	// Start the HTTP server
 	serverAddr := os.Getenv("SERVER_ADDR")

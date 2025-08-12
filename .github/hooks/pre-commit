@@ -1,0 +1,12 @@
+#!/bin/sh
+echo "Running make lint..."
+if ! make lint; then
+    echo "❌ Lint failed. Commit aborted."
+    exit 1
+fi
+
+echo "Running make test..."
+if ! make test; then
+    echo "❌ Tests failed. Commit aborted."
+    exit 1
+fi
